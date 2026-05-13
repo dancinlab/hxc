@@ -1,0 +1,6 @@
+# schema:s1 ts event source sha256
+@s1 "2026-04-22T13:02:34Z"|"init"|"laws.json"|"3e9ace3b01b9adc71382a15818127fa3d29291a83630e9be2242f23ca0b66071"
+@s1 "2026-04-22T14:11:09Z"|"update"|"laws.json"|"7c2a4f1d92ab8e5b4a1c6e3d7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60"
+# schema:s2 ts gate verdict note
+@s2 "2026-04-22T15:00:00Z"|"honesty_triad"|"pass"|"C3 full"
+@s2 "2026-04-22T15:30:00Z"|"shannon_floor"|"pass"|"H_4=0.813"

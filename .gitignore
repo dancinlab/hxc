@@ -1,0 +1,24 @@
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.zed/
+.idea/
+*.log
+*.tmp
+
+# Build artifacts
+build/
+dist/
+target/
+
+# Python bytecode (transient tooling)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local env
+.env
+.local/

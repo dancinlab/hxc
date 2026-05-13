@@ -1,0 +1,7 @@
+# schema:s1 ts witness_id level event fixed_point pass_verdict note
+# tree:0.A 2d38ad85:{"mistral_base":-16.6959,"qwen3_instr":1.04,"llama_base":5.0868}
+# tree:1.B a41304ff:{1,2,3,4,5,6,10,12,32}
+# tree:2.C 45048081:{llama_instruct,qwen3_base,gemma_instruct}
+@s1 "2026-04-25T08:00:00Z"|"w001"|"L0"|"convergence"|"#tree:0.A"|true|"mk_xi r9"
+@s1 "2026-04-25T08:30:00Z"|"w002"|"L1"|"convergence"|"#tree:1.B"|true|"layer sweep"
+@s1 "2026-04-25T09:00:00Z"|"w003"|"L2"|"convergence"|"#tree:2.C"|true|"model triad"
