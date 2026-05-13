@@ -101,4 +101,11 @@ hxc/
 
 ### Live preview
 
-Open [`docs/preview.html`](docs/preview.html) in any browser — every example under `examples/` is rendered side-by-side with `github-dark` and `github-light` themes, using the shipped grammar via [shiki](https://shiki.style/). No editor, extension, or install required. Regenerate after grammar/example changes with `node scripts/render_preview.mjs` (see [`scripts/README.md`](scripts/README.md)).
+Inline below — GitHub auto-switches between `github-dark` and `github-light` to match your theme. Rendered with [shiki](https://shiki.style/) from the shipped grammar.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview-dark.svg">
+  <img alt="hxc syntax preview (examples/*.hxc rendered with github theme)" src="docs/preview-light.svg">
+</picture>
+
+Browser-only view (side-by-side both themes, larger): [`docs/preview.html`](docs/preview.html). Regenerate either after grammar/example changes — see [`scripts/README.md`](scripts/README.md).

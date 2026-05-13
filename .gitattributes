@@ -9,5 +9,7 @@
 # Treat the grammar file as a vendored asset (no language stats contribution)
 syntaxes/hxc.tmLanguage.json linguist-vendored=true
 
-# Generated preview — excluded from language stats
+# Generated previews — excluded from language stats
 docs/preview.html linguist-generated=true
+docs/preview-dark.svg linguist-generated=true
+docs/preview-light.svg linguist-generated=true
