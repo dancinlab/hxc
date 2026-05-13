@@ -1,0 +1,116 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "HXC",
+  "scopeName": "source.hxc",
+  "fileTypes": ["hxc"],
+  "patterns": [
+    { "include": "#schema-header" },
+    { "include": "#directive-header" },
+    { "include": "#comment" },
+    { "include": "#data-row" }
+  ],
+  "repository": {
+    "schema-header": {
+      "match": "^(# schema:)(\\S+)(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.schema.hxc" },
+        "2": { "name": "entity.name.type.schema-id.hxc" },
+        "3": { "name": "variable.parameter.schema-keys.hxc" }
+      }
+    },
+    "directive-header": {
+      "match": "^(# )(tree|delta|const|col-prefix|row-prefix|subschema|arith|ppm|a18|ints|hxc-shared-dict)(:)(.*)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.comment.hxc" },
+        "2": { "name": "keyword.control.directive.hxc" },
+        "3": { "name": "punctuation.separator.hxc" },
+        "4": { "name": "variable.parameter.directive-body.hxc" }
+      }
+    },
+    "comment": {
+      "match": "^#.*$",
+      "name": "comment.line.number-sign.hxc"
+    },
+    "data-row": {
+      "begin": "^(@)(\\S+)( )",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.hxc" },
+        "2": { "name": "entity.name.tag.schema-ref.hxc" }
+      },
+      "end": "$",
+      "patterns": [
+        { "include": "#value" }
+      ]
+    },
+    "value": {
+      "patterns": [
+        { "include": "#string" },
+        { "include": "#null" },
+        { "include": "#boolean" },
+        { "include": "#number" },
+        { "include": "#json-object" },
+        { "include": "#json-array" },
+        { "include": "#separator" }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.hxc",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.hxc",
+          "match": "\\\\([\"\\\\/bfnrt]|u[0-9a-fA-F]{4})"
+        }
+      ]
+    },
+    "null": {
+      "name": "constant.language.null.hxc",
+      "match": "(?<=\\||\\s)~(?=\\||$)"
+    },
+    "boolean": {
+      "name": "constant.language.boolean.hxc",
+      "match": "(?<=\\||\\s)(true|false)(?=\\||$)"
+    },
+    "number": {
+      "name": "constant.numeric.hxc",
+      "match": "(?<=\\||\\s)-?\\d+(\\.\\d+)?(?=\\||$)"
+    },
+    "json-object": {
+      "name": "meta.structure.object.hxc",
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        { "include": "#string" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        {
+          "name": "constant.language.null.hxc",
+          "match": "\\bnull\\b"
+        },
+        {
+          "name": "punctuation.separator.object.hxc",
+          "match": "[,:]"
+        }
+      ]
+    },
+    "json-array": {
+      "name": "meta.structure.array.hxc",
+      "begin": "\\[",
+      "end": "\\]",
+      "patterns": [
+        { "include": "#string" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        {
+          "name": "punctuation.separator.array.hxc",
+          "match": ","
+        }
+      ]
+    },
+    "separator": {
+      "name": "punctuation.separator.pipe.hxc",
+      "match": "\\|"
+    }
+  }
+}

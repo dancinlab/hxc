@@ -25,7 +25,9 @@ HXC is what JSON/JSONL looks like when you optimize for *repeated AI context* in
 
 ## At a glance
 
-```
+```yaml
+# HXC sample — yaml fence used for color approximation only;
+# `.hxc` is not yet a registered GitHub Linguist language.
 # schema:s1 ts action balance_usd delta_usd
 @s1 "2026-04-22T16:03:14Z"|"session"|"135.842"|"0.0000"
 @s1 "2026-04-22T16:10:25Z"|"session"|"135.842"|"0.0000"
@@ -105,10 +107,16 @@ hxc/
 ├── examples/         valid .hxc samples
 ├── algorithms/       A1–A35 stdlib mirror (34 .hexa modules)
 ├── tool/             encoder/decoder/lint references
+├── syntaxes/
+│   └── hxc.tmLanguage.json    TextMate grammar (theme-agnostic)
 ├── docs/
 │   ├── INDEX.md      doc index
-│   ├── DESIGN.md     README design notes
+│   ├── DESIGN.md     README design notes + syntax-highlighting path
 │   └── logo.svg      hexagon mark
 └── .github/workflows/
     └── lint.yml      byte-canonical invariant CI
 ```
+
+## Editor support
+
+`.hxc` is not yet a registered language on [github/linguist](https://github.com/github-linguist/linguist), so GitHub does not natively highlight `.hxc` fences. The repo ships a TextMate grammar that any modern editor can load — see [`syntaxes/README.md`](syntaxes/README.md) for VS Code / Sublime / TextMate install steps. Roadmap to upstream registration is in [`docs/DESIGN.md` §6](docs/DESIGN.md).

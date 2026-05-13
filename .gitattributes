@@ -1,0 +1,10 @@
+# Linguist: HXC is not yet a registered language on github/linguist.
+# Until adoption clears the linguist contribution bar, classify *.hxc
+# as YAML so the language pie chart on GitHub uses a recognizable color.
+# Code-fence highlighting still requires a custom grammar — see
+# syntaxes/hxc.tmLanguage.json + docs/DESIGN.md §6.
+*.hxc linguist-language=YAML
+*.hxc linguist-detectable=true
+
+# Treat the grammar file as a vendored asset (no language stats contribution)
+syntaxes/hxc.tmLanguage.json linguist-vendored=true
