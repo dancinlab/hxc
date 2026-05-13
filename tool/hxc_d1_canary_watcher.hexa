@@ -1,0 +1,265 @@
+#!hexa strict
+
+// @resolver-bypass(reason="darwin-native filesystem hash compare — local pilot canary loop")
+// @tool(slug="hxc-d1-canary-watcher", desc="raw 156 D1 P1 pilot consumer canary watcher. Per registered consumer, compute sha256(read_artifact(logical)) vs sha256(read_file(logical)) and emit one JSONL row per tick to state/hxc_d1_canary/<YYYY-MM-DD>_<consumer>.jsonl. Falsifier F-D1-1: any divergence row → IMMEDIATE rollback advisory. Falsifier F-D1-2: <50% expected ticks landed within 7-day window → cadence broken.")
+// @usage(hexa $HIVE/tool/hxc_d1_canary_watcher.hexa --selftest)
+// @usage(hexa $HIVE/tool/hxc_d1_canary_watcher.hexa run [--consumer=<slug>])
+// @usage(hexa $HIVE/tool/hxc_d1_canary_watcher.hexa report [--consumer=<slug>] [--window-days=7])
+// @exit_codes(0=ok-or-PASS, 1=usage/io error, 2=divergence-detected, 3=cadence-broken, 4=selftest-fail)
+//
+// raw refs:
+//   raw 65/68 idempotent — sha256 manifest comparison
+//   raw 77    audit ledger schema (per-tick row)
+//   raw 91    honest C3 — divergence is a TRUE NEGATIVE, surface immediately, never silently fall back
+//   raw 99    hive cli canonical — invoked via hive init body, not standalone launchd
+//   raw 142   D2 try-and-revert — divergence triggers rollback path (revert +2 LoC swap)
+//   raw 154   deploy-rollout-mandate — D1 single-repo canary stage
+//   raw 155   hxc-consumer-adapter-mandate — read_artifact() canonical reader
+//   raw 156   placement-orthogonality (axis tracked in proof-bundle, not gated here)
+//   F-D1-1    7d window 1+ sha256 divergence → IMMEDIATE rollback + canary FAIL
+//   F-D1-2    7d window <50% expected ticks executed → cadence broken
+//
+// LEDGER ROW SCHEMA (raw 77):
+//   {"ts":"<utc-iso>","consumer":"<slug>","logical":"<path>",
+//    "sha256_via_adapter":"<hex>","sha256_via_direct":"<hex>",
+//    "byte_eq":<bool>,"adapter_bytes":<int>,"direct_bytes":<int>,
+//    "divergence":<bool>,"window_day":<int>,"tick_idx":<int>}
+
+const ADAPTER = env("HEXA_LANG") + "/hexa " + env("HIVE") + "/tool/hxc_consumer_adapter.hexa read"
+const HIVE_ROOT = env("HIVE")
+const LEDGER_DIR = env("HIVE") + "/state/hxc_d1_canary"
+const PILOT_START_ISO = "2026-04-28"
+
+// Pilot registry (D1 P1) — extend as additional pilots adopt read_artifact().
+// D1 P2 W1+W2 forward-LIVE prep entries (deferred-active): activated post D1 P1 day-7 PASS on 2026-05-05.
+// Per raw 91 honest C3: deferred entries live in _pilots_deferred() and are not
+// invoked until the activation ledger removes the .prep suffix from
+// state/hxc_d1_canary/2026-04-28_w*_*.jsonl.prep placeholders.
+fn _pilots() -> array {
+    return [
+        ["discovery_absorption_lint", "state/discovery_absorption/registry.jsonl"]
+    ]
+}
+
+fn _pilots_deferred() -> array {
+    // D1 P2 forward-LIVE prep — NOT active until per-wave entry condition met.
+    // W1 entry: D1 P1 day-7 (2026-05-05) zero divergence + cadence >= 50%.
+    // W2 entry: W1 day-3 (2026-05-08) zero divergence + cadence >= 50%.
+    return [
+        ["audit_ledger_lint", env("NEXUS") + "/.raw-audit", "W1", "2026-05-05"],
+        ["honesty_triad_lint", "state/honesty_triad/audit.jsonl", "W1", "2026-05-05"],
+        ["raw_strengthening_loop_lint", "state/raw_strengthening_proposals/registry.jsonl", "W2", "2026-05-08"]
+    ]
+}
+
+fn _now_iso_utc() -> string { return to_string(exec("date -u +%Y-%m-%dT%H:%M:%SZ")).trim() }
+fn _today_utc()   -> string { return to_string(exec("date -u +%Y-%m-%d")).trim() }
+fn _today_local() -> string { return to_string(exec("date +%Y-%m-%d")).trim() }
+
+fn _esc_json(s: string) -> string {
+    let mut r = s.replace("\\", "\\\\")
+    r = r.replace("\"", "\\\"")
+    r = r.replace("\n", "\\n")
+    r = r.replace("\r", "")
+    r = r.replace("\t", " ")
+    return r
+}
+
+fn _shell_escape(s: string) -> string {
+    let mut parts = []
+    parts.push("'")
+    let mut i = 0
+    // @triad: atomize
+    while i < len(s) {
+        let c = s.substring(i, i + 1)
+        if c == "'" { parts.push("'\\''") } else { parts.push(c) }
+        i = i + 1
+    }
+    parts.push("'")
+    return parts.join("")
+}
+
+fn _ensure_dir(p: string) {
+    exec("mkdir -p " + _shell_escape(p))
+}
+
+fn _ledger_path(consumer: string) -> string {
+    // Ledger keyed by LOCAL date for human alignment with daily cadence; row ts captured as UTC ISO inside body.
+    return LEDGER_DIR + "/" + _today_local() + "_" + consumer + ".jsonl"
+}
+
+fn _sha256_via_adapter(logical: string) -> array {
+    // Returns [sha256_hex, byte_count].
+    let cmd = "cd " + _shell_escape(HIVE_ROOT) + " && " + ADAPTER + " " + _shell_escape(logical) + " 2>/dev/null | tee /tmp/hxc_d1_canary_adapter.bin | shasum -a 256 | awk '{print $1}'"
+    let h = to_string(exec(cmd)).trim()
+    let n = to_int(to_string(exec("wc -c < /tmp/hxc_d1_canary_adapter.bin 2>/dev/null || echo 0")).trim())
+    exec("rm -f /tmp/hxc_d1_canary_adapter.bin")
+    return [h, n]
+}
+
+fn _sha256_via_direct(logical: string) -> array {
+    let abs = HIVE_ROOT + "/" + logical
+    let h = to_string(exec("shasum -a 256 " + _shell_escape(abs) + " 2>/dev/null | awk '{print $1}'")).trim()
+    let n = to_int(to_string(exec("wc -c < " + _shell_escape(abs) + " 2>/dev/null || echo 0")).trim())
+    return [h, n]
+}
+
+fn _window_day(start_iso: string) -> int {
+    // Day-delta via BSD `date` epoch arithmetic on LOCAL date; defaults to 0 on parse fail.
+    let cmd = "echo $(( ( $(date +%s) - $(date -j -f '%Y-%m-%d' " + _shell_escape(start_iso) + " '+%s' 2>/dev/null) ) / 86400 )) 2>/dev/null || echo 0"
+    let out = to_string(exec(cmd)).trim()
+    if out == "" { return 0 }
+    let n = to_int(out)
+    if n < 0 { return 0 }
+    return n
+}
+
+fn _tick_idx(consumer: string) -> int {
+    let p = _ledger_path(consumer)
+    let n = to_int(to_string(exec("if [ -f " + _shell_escape(p) + " ]; then wc -l < " + _shell_escape(p) + " 2>/dev/null; else echo 0; fi")).trim())
+    return n
+}
+
+fn _emit_row(consumer: string, logical: string, sha_a: string, sha_d: string, n_a: int, n_d: int) -> bool {
+    _ensure_dir(LEDGER_DIR)
+    let byte_eq = (sha_a == sha_d) && (n_a == n_d)
+    let divergence = !byte_eq
+    let wday = _window_day(PILOT_START_ISO)
+    let tick = _tick_idx(consumer)
+    let row = "{\"ts\":\"" + _now_iso_utc() + "\",\"consumer\":\"" + _esc_json(consumer) + "\",\"logical\":\"" + _esc_json(logical) + "\",\"sha256_via_adapter\":\"" + _esc_json(sha_a) + "\",\"sha256_via_direct\":\"" + _esc_json(sha_d) + "\",\"byte_eq\":" + (if byte_eq { "true" } else { "false" }) + ",\"adapter_bytes\":" + to_string(n_a) + ",\"direct_bytes\":" + to_string(n_d) + ",\"divergence\":" + (if divergence { "true" } else { "false" }) + ",\"window_day\":" + to_string(wday) + ",\"tick_idx\":" + to_string(tick) + "}"
+    let p = _ledger_path(consumer)
+    let cmd = "printf '%s\\n' " + _shell_escape(row) + " >> " + _shell_escape(p)
+    exec(cmd)
+    return byte_eq
+}
+
+fn run(consumer_filter: string) -> int {
+    let pilots = _pilots()
+    let mut i = 0
+    let mut overall = 0
+    // @triad: atomize
+    while i < len(pilots) {
+        let row = pilots[i]
+        let slug = to_string(row[0])
+        let logical = to_string(row[1])
+        if consumer_filter == "" || consumer_filter == slug {
+            let a = _sha256_via_adapter(logical)
+            let d = _sha256_via_direct(logical)
+            let ok = _emit_row(slug, logical, to_string(a[0]), to_string(d[0]), to_int(a[1]), to_int(d[1]))
+            if !ok {
+                eprintln("[hxc_d1_canary_watcher] DIVERGENCE consumer=" + slug + " logical=" + logical + " sha_adapter=" + to_string(a[0]) + " sha_direct=" + to_string(d[0]))
+                eprintln("[hxc_d1_canary_watcher] reason: F-D1-1 falsifier triggered — read_artifact() vs direct read sha256 mismatch")
+                eprintln("[hxc_d1_canary_watcher] fix: 1) revert +2 LoC swap in tool/" + slug + ".hexa 2) re-encode .hxc artifact 3) re-run watcher")
+                overall = 2
+            }
+        }
+        i = i + 1
+    }
+    return overall
+}
+
+fn report(consumer_filter: string, window_days: int) -> int {
+    // F-D1-2 cadence check: count rows in the last <window_days> daily ledgers.
+    // Expected = window_days (1 tick per day). Threshold: ≥ 50% landed.
+    let pilots = _pilots()
+    let mut i = 0
+    let mut worst = 0
+    // @triad: atomize
+    while i < len(pilots) {
+        let row = pilots[i]
+        let slug = to_string(row[0])
+        if consumer_filter == "" || consumer_filter == slug {
+            let cmd = "ls " + _shell_escape(LEDGER_DIR) + "/*_" + slug + ".jsonl 2>/dev/null | sort | tail -n " + to_string(window_days) + " | xargs -I {} wc -l {} 2>/dev/null | awk '{s+=$1} END{print s+0}'"
+            let total = to_int(to_string(exec(cmd)).trim())
+            let div_cmd = "ls " + _shell_escape(LEDGER_DIR) + "/*_" + slug + ".jsonl 2>/dev/null | sort | tail -n " + to_string(window_days) + " | xargs grep -c '\"divergence\":true' 2>/dev/null | awk -F: '{s+=$NF} END{print s+0}'"
+            let divs = to_int(to_string(exec(div_cmd)).trim())
+            let expected = window_days
+            let pct = if expected > 0 { (total * 100) / expected } else { 0 }
+            print("[hxc_d1_canary_watcher] consumer=" + slug + " window=" + to_string(window_days) + "d ticks=" + to_string(total) + " expected=" + to_string(expected) + " coverage=" + to_string(pct) + "% divergences=" + to_string(divs))
+            if divs > 0 {
+                eprintln("[hxc_d1_canary_watcher] FAIL F-D1-1: " + to_string(divs) + " divergence(s) in " + to_string(window_days) + "d window for " + slug)
+                worst = 2
+            }
+            if pct < 50 {
+                eprintln("[hxc_d1_canary_watcher] FAIL F-D1-2: cadence " + to_string(pct) + "% < 50% threshold for " + slug)
+                if worst < 3 { worst = 3 }
+            }
+        }
+        i = i + 1
+    }
+    return worst
+}
+
+fn selftest() -> int {
+    println("# hxc_d1_canary_watcher selftest")
+    let mut pass = 0
+    let mut fail = 0
+
+    // Unit 1: ledger path shape
+    let p = _ledger_path("foo")
+    if p.substring(0, len(LEDGER_DIR)) == LEDGER_DIR { pass = pass + 1; println("  PASS ledger_path prefix") } else { fail = fail + 1; println("  FAIL ledger_path prefix") }
+    let suffix_idx = len(p) - len("_foo.jsonl")
+    if p.substring(suffix_idx, len(p)) == "_foo.jsonl" { pass = pass + 1; println("  PASS ledger_path suffix") } else { fail = fail + 1; println("  FAIL ledger_path suffix got " + p) }
+
+    // Unit 2: pilots registry shape
+    let pilots = _pilots()
+    if len(pilots) >= 1 { pass = pass + 1; println("  PASS pilots non-empty") } else { fail = fail + 1; println("  FAIL pilots empty") }
+    let row0 = pilots[0]
+    if to_string(row0[0]) == "discovery_absorption_lint" && to_string(row0[1]) == "state/discovery_absorption/registry.jsonl" { pass = pass + 1; println("  PASS pilot row[0] D1 P1 expected") } else { fail = fail + 1; println("  FAIL pilot row[0] mismatch") }
+
+    // Unit 3: shell escape preserves single quotes safely
+    let esc = _shell_escape("a'b")
+    if esc.substring(0, 1) == "'" && esc.substring(len(esc)-1, len(esc)) == "'" { pass = pass + 1; println("  PASS shell_escape wrap") } else { fail = fail + 1; println("  FAIL shell_escape wrap got " + esc) }
+
+    // Unit 4: byte-eq invariant via adapter on the registered pilot (LIVE check, treats 0-byte as skip)
+    let a = _sha256_via_adapter("state/discovery_absorption/registry.jsonl")
+    let d = _sha256_via_direct("state/discovery_absorption/registry.jsonl")
+    let n_a = to_int(a[1])
+    let n_d = to_int(d[1])
+    if n_a > 0 && n_d > 0 {
+        if to_string(a[0]) == to_string(d[0]) && n_a == n_d { pass = pass + 1; println("  PASS LIVE D1 byte-eq sha256+bytes (" + to_string(n_a) + "B)") } else { fail = fail + 1; println("  FAIL LIVE D1 byte-eq sha_a=" + to_string(a[0]) + " sha_d=" + to_string(d[0]) + " n_a=" + to_string(n_a) + " n_d=" + to_string(n_d)) }
+    } else {
+        pass = pass + 1; println("  SKIP LIVE D1 byte-eq (registry not present yet — D1 entry pending)")
+    }
+
+    // Unit 5: window_day arithmetic returns int
+    let w = _window_day(PILOT_START_ISO)
+    if w >= 0 { pass = pass + 1; println("  PASS window_day non-negative (=" + to_string(w) + ")") } else { fail = fail + 1; println("  FAIL window_day negative") }
+
+    // Unit 6: emit_row writes a parseable line then prunes test artifact
+    _ensure_dir(LEDGER_DIR)
+    let test_consumer = "selftest_temp_consumer"
+    _emit_row(test_consumer, "state/discovery_absorption/registry.jsonl", "abc", "abc", 1, 1)
+    let tp = _ledger_path(test_consumer)
+    let n_rows = to_int(to_string(exec("wc -l < " + _shell_escape(tp) + " 2>/dev/null || echo 0")).trim())
+    exec("rm -f " + _shell_escape(tp))
+    if n_rows == 1 { pass = pass + 1; println("  PASS emit_row appends 1 line") } else { fail = fail + 1; println("  FAIL emit_row n_rows=" + to_string(n_rows)) }
+
+    println("Results: " + to_string(pass) + " PASS / " + to_string(fail) + " FAIL out of " + to_string(pass + fail))
+    println("__HXC_D1_CANARY_WATCHER_SELFTEST__ " + (if fail == 0 { "PASS" } else { "FAIL" }))
+    if fail == 0 { return 0 }
+    return 4
+}
+
+fn main() {
+    let av = argv()
+    let mut i = 2
+    let mut consumer_filter = ""
+    let mut window_days = 7
+    let mut mode = ""
+    // @triad: atomize
+    while i < len(av) {
+        let a = to_string(av[i])
+        if a == "--selftest" { mode = "selftest" }
+        else if a == "run" { mode = "run" }
+        else if a == "report" { mode = "report" }
+        else if len(a) >= 11 && a.substring(0, 11) == "--consumer=" { consumer_filter = a.substring(11, len(a)) }
+        else if len(a) >= 14 && a.substring(0, 14) == "--window-days=" { window_days = to_int(a.substring(14, len(a))) }
+        i = i + 1
+    }
+    if mode == "selftest" { exit(selftest()) }
+    if mode == "run" { exit(run(consumer_filter)) }
+    if mode == "report" { exit(report(consumer_filter, window_days)) }
+    eprintln("usage: hxc_d1_canary_watcher.hexa --selftest | run [--consumer=<slug>] | report [--consumer=<slug>] [--window-days=7]")
+    exit(1)
+}

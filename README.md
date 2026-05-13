@@ -62,8 +62,10 @@ hxc/
 ├── spec/
 │   └── hxc.md        canonical v2 spec
 ├── examples/         valid .hxc samples
-└── docs/
-    └── INDEX.md      doc index + planned mirrors
+├── algorithms/       A1–A35 stdlib mirror (34 .hexa modules)
+├── tool/             encoder/decoder/lint references
+├── docs/
+│   └── INDEX.md      doc index
+└── .github/workflows/
+    └── lint.yml      byte-canonical invariant CI
 ```
-
-Tool/algorithm mirrors (`tool/`, `algorithms/`) and CI land in a follow-up cycle.

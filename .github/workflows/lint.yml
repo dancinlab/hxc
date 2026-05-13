@@ -1,0 +1,104 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  byte-canonical:
+    name: Byte-canonical invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check UTF-8 validity
+        run: |
+          set -e
+          fail=0
+          for f in examples/*.hxc; do
+            if ! iconv -f UTF-8 -t UTF-8 "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::not valid UTF-8"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check no BOM
+        run: |
+          set -e
+          fail=0
+          for f in examples/*.hxc; do
+            if head -c 3 "$f" | od -An -tx1 | grep -q 'ef bb bf'; then
+              echo "::error file=$f::BOM present"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check LF line endings only
+        run: |
+          set -e
+          fail=0
+          for f in examples/*.hxc; do
+            if grep -lU $'\r' "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::CRLF or CR detected"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check no trailing whitespace
+        run: |
+          set -e
+          fail=0
+          for f in examples/*.hxc; do
+            if grep -nE ' +$' "$f"; then
+              echo "::error file=$f::trailing whitespace"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check single trailing newline
+        run: |
+          set -e
+          fail=0
+          for f in examples/*.hxc; do
+            last=$(tail -c 1 "$f" | od -An -tx1 | tr -d ' ')
+            if [ "$last" != "0a" ]; then
+              echo "::error file=$f::missing trailing LF"
+              fail=1
+            fi
+            penult=$(tail -c 2 "$f" | head -c 1 | od -An -tx1 | tr -d ' ')
+            if [ "$penult" = "0a" ]; then
+              echo "::error file=$f::multiple trailing newlines"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check no blank lines
+        run: |
+          set -e
+          fail=0
+          for f in examples/*.hxc; do
+            if grep -nE '^$' "$f"; then
+              echo "::error file=$f::blank line present"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check schema/data line anchors at column 0
+        run: |
+          set -e
+          fail=0
+          for f in examples/*.hxc; do
+            if grep -nE '^[[:space:]]+(#|@)' "$f"; then
+              echo "::error file=$f::header or data line has leading whitespace"
+              fail=1
+            fi
+          done
+          exit $fail

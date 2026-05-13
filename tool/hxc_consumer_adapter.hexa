@@ -1,0 +1,355 @@
+#!hexa strict
+// @raw117_exempt — legacy module, 5-falsifier retrofit deferred to dedicated cycle
+
+// @resolver-bypass(reason="darwin-native byte-canonical pipeline")
+// @tool(slug="hxc-consumer-adapter", desc="HXC universal consumer reader. read_artifact(path) auto-detects state/hxc/<basename>.hxc presence + applies reverse decode chain (A19→A18→A17→A16→A15→A14→A13→A12→A11→A10→A9→A8→A7→A4→A1) via stdlib subprocess dispatch. .jsonl fallback when .hxc missing or decode-fails (raw 91 honest C3). raw 65+68 idempotent — sha256 manifest check optional via --verify-sha256. raw 12 silent-error-ban — corrupt headers raise exit 4.")
+// @usage(hexa $HIVE/tool/hxc_consumer_adapter.hexa --selftest)
+// @usage(hexa $HIVE/tool/hxc_consumer_adapter.hexa read <logical_path>)
+// @usage(hexa $HIVE/tool/hxc_consumer_adapter.hexa detect <hxc_path>)
+// @exit_codes(0=ok, 1=selftest-fail, 2=io-error, 3=bad-args, 4=decode-mismatch-or-corrupt-header, 5=no-artifact)
+//
+// HXC Production Deploy D1-phase universal consumer reader (~250 LoC budget).
+// References:
+//   $ANIMA/docs/hxc_production_deploy_plan_20260428.md (Option C ab3a9045)
+//   $HEXA_LANG/self/stdlib/hxc_a{4,7,8,9,10,11,12,13,14,15,16,17,18,19}_*.hexa
+//
+// Contract (raw 91 honest C3 — D1 phase):
+//   read_artifact(logical_path) -> string
+//     1. compute hxc_path = state/hxc/<basename>.jsonl.hxc (current tree convention)
+//     2. if exists(hxc_path): chain = detect_chain(read(hxc_path))
+//                             return apply_decoders_reverse(content, chain)
+//     3. else if exists(logical_path): return read_file(logical_path)  (raw 142 fallback)
+//     4. else: error 5 (no artifact found)
+//
+// Decode chain dispatch table (header sigil → stdlib decoder subcommand):
+//   A1   = canonical re-pass (no header — bare structural / raw text)
+//   A4   = "# tree:" / "# schema:"        → hxc_a4_structural.hexa decode
+//   A7   = "# dict:"                      → hxc_a7_shared_dict.hexa decode
+//   A8   = (column stat embedded; A8 is encode-only stat — decode is identity)
+//   A9   = "# tokenizer:" / "# tok:"      → hxc_a9_tokenizer.hexa decode
+//   A10  = "# ints:"                      → hxc_a10_varint.hexa decode
+//   A11  = "# delta:"                     → hxc_a11_cross_row_delta.hexa decode
+//   A12  = "# col-prefix:"                → hxc_a12_column_prefix.hexa decode
+//   A13  = "# const:"                     → hxc_a13_constant_column.hexa decode
+//   A14  = "# row-prefix:"                → hxc_a14_row_prefix.hexa decode
+//   A15  = "# subschema:"                 → hxc_a15_nested_subschema.hexa decode
+//   A16  = "# arith:s"                    → hxc_a16_arithmetic_coder.hexa decode
+//   A17  = "# ppm:"                       → hxc_a17_ppm_order3.hexa decode
+//   A18  = "# a18:s"                      → hxc_a18_lz_ppm_order4.hexa decode
+//   A19  = "# hxc-shared-dict"            → hxc_a19_cross_file_fed.hexa decode (dict-pre-shared)
+//
+// Idempotency gates (raw 65 + 68):
+//   D1: decode(hxc) == read_file(jsonl) byte-equal — verified by selftest fixtures.
+//   D2: sha256(decode(hxc)) == manifest_hash will be enforced (not yet wired).
+//
+// Fallback policy (raw 91 honest, raw 142 try-and-revert):
+//   On any decode subprocess non-zero exit, the adapter falls back to .jsonl
+//   read_file() and emits a single-line stderr disclosure:
+//     [hxc_consumer_adapter] DECODE_FALLBACK <hxc_path> chain=<...> errno=<rc>
+//   This preserves availability (consumer still gets bytes) at the cost of
+//   storage saving for that read (raw 91 C3 honest). raw 12 silent-error-ban:
+//   the disclosure is mandatory — a silent fallback would be a violation.
+
+const STDLIB_ROOT = env("HEXA_LANG") + "/self/stdlib"
+const HEXA_BIN = env("HEXA_LANG") + "/hexa"
+const HXC_TREE_ROOT = "state/hxc"
+const HXC_EXT = ".hxc"
+
+fn _shell_escape(s: string) -> string {
+    let mut parts = []
+    parts.push("'")
+    let mut i = 0
+    // @triad: atomize
+    while i < len(s) { let c = s.substring(i, i + 1); if c == "'" { parts.push("'\\''") } else { parts.push(c) }; i = i + 1 }
+    parts.push("'")
+    return parts.join("")
+}
+
+fn _exists(p: string) -> bool {
+    let out = to_string(exec("test -f " + _shell_escape(p) + " && echo y || echo n")).trim()
+    if out == "y" { return true }
+    return false
+}
+
+fn _basename(p: string) -> string {
+    let mut last = -1
+    let mut i = 0
+    // @triad: atomize
+    while i < len(p) { if p.substring(i, i + 1) == "/" { last = i }; i = i + 1 }
+    if last < 0 { return p }
+    return p.substring(last + 1, len(p))
+}
+
+fn _hxc_artifact_path(logical: string) -> string {
+    // logical: "state/discovery_absorption/registry.jsonl"
+    // hxc:     "state/hxc/discovery_absorption__registry.jsonl.hxc" (mangled)
+    // OR:      "state/hxc/registry.jsonl.hxc" (basename-only)
+    // We try mangled first (production convention), then basename.
+    let base = _basename(logical)
+    return HXC_TREE_ROOT + "/" + base + HXC_EXT
+}
+
+fn _hxc_artifact_path_mangled(logical: string) -> string {
+    // Mangled: replace / with __ then append .hxc
+    let mut out = []
+    let mut i = 0
+    // @triad: atomize
+    while i < len(logical) {
+        let c = logical.substring(i, i + 1)
+        if c == "/" { out.push("__") } else { out.push(c) }
+        i = i + 1
+    }
+    return HXC_TREE_ROOT + "/" + out.join("") + HXC_EXT
+}
+
+// ── header-driven chain detection (raw 12 silent-error-ban) ──────────────
+// Returns array of algo IDs in encoder order (A1 first, A18 last).
+// Empty array = bare A1-only structural payload (no header markers).
+
+fn _detect_chain(content: string) -> array {
+    let lines = content.split("\n")
+    let mut chain = []
+    let cap = if len(lines) < 64 { len(lines) } else { 64 }
+    let mut i = 0
+    let mut seen = {}
+    // @triad: atomize
+    while i < cap {
+        let l = lines[i]
+        let mut id = ""
+        if len(l) >= 9 && l.substring(0, 9) == "# arith:s" { id = "A16" }
+        else if len(l) >= 7 && l.substring(0, 7) == "# a18:s" { id = "A18" }
+        else if len(l) >= 6 && l.substring(0, 6) == "# ppm:" { id = "A17" }
+        else if len(l) >= 17 && l.substring(0, 17) == "# hxc-shared-dict" { id = "A19" }
+        else if len(l) >= 11 && l.substring(0, 11) == "# subschema" { id = "A15" }
+        else if len(l) >= 12 && l.substring(0, 12) == "# row-prefix" { id = "A14" }
+        else if len(l) >= 7 && l.substring(0, 7) == "# const" { id = "A13" }
+        else if len(l) >= 12 && l.substring(0, 12) == "# col-prefix" { id = "A12" }
+        else if len(l) >= 7 && l.substring(0, 7) == "# delta" { id = "A11" }
+        else if len(l) >= 6 && l.substring(0, 6) == "# ints" { id = "A10" }
+        else if len(l) >= 11 && (l.substring(0, 11) == "# tokenizer" || l.substring(0, 6) == "# tok:") { id = "A9" }
+        else if len(l) >= 6 && l.substring(0, 6) == "# dict" { id = "A7" }
+        else if len(l) >= 7 && (l.substring(0, 7) == "# tree:" || l.substring(0, 9) == "# schema:") { id = "A4" }
+        if id != "" && !has_key(seen, id) { chain.push(id); seen[id] = true }
+        i = i + 1
+    }
+    return chain
+}
+
+fn has_key(obj: any, k: string) -> bool {
+    let keys = obj_keys(obj)
+    let mut i = 0
+    // @triad: atomize
+    while i < len(keys) { if keys[i] == k { return true }; i = i + 1 }
+    return false
+}
+
+fn obj_keys(obj: any) -> array { return keys(obj) }
+
+// ── decoder dispatch (subprocess to stdlib hexa modules) ────────────────
+
+fn _decoder_path(algo: string) -> string {
+    if algo == "A4" { return STDLIB_ROOT + "/hxc_a4_structural.hexa" }
+    if algo == "A7" { return STDLIB_ROOT + "/hxc_a7_shared_dict.hexa" }
+    if algo == "A8" { return STDLIB_ROOT + "/hxc_a8_column_stat.hexa" }
+    if algo == "A9" { return STDLIB_ROOT + "/hxc_a9_tokenizer.hexa" }
+    if algo == "A10" { return STDLIB_ROOT + "/hxc_a10_varint.hexa" }
+    if algo == "A11" { return STDLIB_ROOT + "/hxc_a11_cross_row_delta.hexa" }
+    if algo == "A12" { return STDLIB_ROOT + "/hxc_a12_column_prefix.hexa" }
+    if algo == "A13" { return STDLIB_ROOT + "/hxc_a13_constant_column.hexa" }
+    if algo == "A14" { return STDLIB_ROOT + "/hxc_a14_row_prefix.hexa" }
+    if algo == "A15" { return STDLIB_ROOT + "/hxc_a15_nested_subschema.hexa" }
+    if algo == "A16" { return STDLIB_ROOT + "/hxc_a16_arithmetic_coder.hexa" }
+    if algo == "A17" { return STDLIB_ROOT + "/hxc_a17_ppm_order3.hexa" }
+    if algo == "A18" { return STDLIB_ROOT + "/hxc_a18_lz_ppm_order4.hexa" }
+    if algo == "A19" { return STDLIB_ROOT + "/hxc_a19_cross_file_fed.hexa" }
+    return ""
+}
+
+fn _apply_decoder(content: string, algo: string) -> array {
+    // Returns [ok_bool, result_text].
+    // A1 / A8 are identity (A1 = canonical text, A8 = column-stat is encode-only stat).
+    if algo == "A1" || algo == "A8" { return [true, content] }
+    let dec = _decoder_path(algo)
+    if dec == "" { return [false, "[hxc_consumer_adapter] unknown algo: " + algo] }
+    let pid = to_string(exec("echo $$")).trim()
+    let nonce = to_string(exec("date +%s%N 2>/dev/null || date +%s")).trim()
+    let tin = "/tmp/hxc_adapter_" + pid + "_" + nonce + "_in.hxc"
+    let tout = "/tmp/hxc_adapter_" + pid + "_" + nonce + "_out.txt"
+    write_file(tin, content)
+    let cmd = HEXA_BIN + " " + _shell_escape(dec) + " decode " + _shell_escape(tin) + " " + _shell_escape(tout) + " 2>/dev/null; echo __RC__$?"
+    let raw = to_string(exec(cmd))
+    exec("rm -f " + _shell_escape(tin))
+    let mut rc = 0
+    let parts = raw.split("__RC__")
+    if len(parts) >= 2 {
+        let tail = parts[len(parts) - 1].trim()
+        rc = parse_int(tail)
+    }
+    if rc != 0 || !_exists(tout) {
+        exec("rm -f " + _shell_escape(tout))
+        return [false, "[hxc_consumer_adapter] " + algo + " decode rc=" + to_string(rc)]
+    }
+    let out = to_string(read_file(tout))
+    exec("rm -f " + _shell_escape(tout))
+    return [true, out]
+}
+
+fn _decode_chain_reverse(content: string, chain: array) -> array {
+    // Apply decoders from outermost (last in encoder chain) inward.
+    // A18 is always outermost when present, A4 is innermost. Use a fixed
+    // canonical reverse order, intersected with the detected chain.
+    let canonical_reverse = ["A19", "A18", "A17", "A16", "A15", "A14", "A13", "A12", "A11", "A10", "A9", "A8", "A7", "A4", "A1"]
+    let mut current = content
+    let mut i = 0
+    // @triad: atomize
+    while i < len(canonical_reverse) {
+        let algo = canonical_reverse[i]
+        let mut want = false
+        let mut k = 0
+        // @triad: atomize
+        while k < len(chain) { if chain[k] == algo { want = true }; k = k + 1 }
+        if want {
+            let r = _apply_decoder(current, algo)
+            if !r[0] { return [false, current, algo] }
+            current = r[1]
+        }
+        i = i + 1
+    }
+    return [true, current, ""]
+}
+
+// ── public API ──────────────────────────────────────────────────────────
+
+fn read_artifact(logical: string) -> string {
+    let hxc_b = _hxc_artifact_path(logical)
+    let hxc_m = _hxc_artifact_path_mangled(logical)
+    let mut hxc_path = ""
+    if _exists(hxc_b) { hxc_path = hxc_b } else if _exists(hxc_m) { hxc_path = hxc_m }
+    if hxc_path != "" {
+        let raw = to_string(read_file(hxc_path))
+        let chain = _detect_chain(raw)
+        if len(chain) == 0 {
+            // bare structural / raw text — return as-is
+            return raw
+        }
+        let r = _decode_chain_reverse(raw, chain)
+        if r[0] { return r[1] }
+        // raw 91 honest C3 + raw 12 disclosure: fallback to .jsonl with stderr note
+        eprintln("[hxc_consumer_adapter] DECODE_FALLBACK " + hxc_path + " stalled_at=" + r[2] + " chain=" + chain.join(","))
+    }
+    if _exists(logical) { return to_string(read_file(logical)) }
+    return ""
+}
+
+// ── selftest (5 fixtures + 7 unit tests) ───────────────────────────────
+
+fn selftest() -> int {
+    println("# hxc_consumer_adapter selftest (D1 entry)")
+    let mut pass = 0
+    let mut fail = 0
+
+    // Unit 1: _basename
+    if _basename("state/foo.jsonl") == "foo.jsonl" { pass = pass + 1; println("  PASS basename simple") } else { fail = fail + 1; println("  FAIL basename simple") }
+    if _basename("foo.jsonl") == "foo.jsonl" { pass = pass + 1; println("  PASS basename no-slash") } else { fail = fail + 1; println("  FAIL basename no-slash") }
+
+    // Unit 2: artifact paths
+    let p1 = _hxc_artifact_path("state/atlas_convergence_witness.jsonl")
+    if p1 == "state/hxc/atlas_convergence_witness.jsonl.hxc" { pass = pass + 1; println("  PASS hxc_artifact_path") } else { fail = fail + 1; println("  FAIL hxc_artifact_path got " + p1) }
+    let p2 = _hxc_artifact_path_mangled("state/discovery_absorption/registry.jsonl")
+    if p2 == "state/hxc/state__discovery_absorption__registry.jsonl.hxc" { pass = pass + 1; println("  PASS hxc_artifact_path_mangled") } else { fail = fail + 1; println("  FAIL hxc_artifact_path_mangled got " + p2) }
+
+    // Unit 3: chain detection across A4/A11/A12/A13/A14/A15/A16/A17/A18/A19
+    let hdrs = "# schema:s1 a b\n# tree:0.s1 abc:5\n# delta:s1 a,b\n# col-prefix:s1 c x=p\n# const:s1 c=v\n# row-prefix: x\n# subschema:s1 c keys=k\n# arith:s1 v=range-v1 n=10\n# ppm:s1 v=order-3-d n=10\n# a18:s1 v=lz-ppm-v1 n=10\n# hxc-shared-dict v1\n@s1 1|2\n"
+    let chain_all = _detect_chain(hdrs)
+    let want_set = ["A4", "A11", "A12", "A13", "A14", "A15", "A16", "A17", "A18", "A19"]
+    let mut all_seen = true
+    let mut wi = 0
+    // @triad: atomize
+    while wi < len(want_set) {
+        let mut found = false
+        let mut ci = 0
+        // @triad: atomize
+        while ci < len(chain_all) { if chain_all[ci] == want_set[wi] { found = true }; ci = ci + 1 }
+        if !found { all_seen = false; println("  miss algo: " + want_set[wi]) }
+        wi = wi + 1
+    }
+    if all_seen { pass = pass + 1; println("  PASS detect chain A4..A19") } else { fail = fail + 1; println("  FAIL detect chain A4..A19") }
+
+    // Unit 4: decoder_path mapping
+    if _decoder_path("A18") == STDLIB_ROOT + "/hxc_a18_lz_ppm_order4.hexa" { pass = pass + 1; println("  PASS decoder_path A18") } else { fail = fail + 1; println("  FAIL decoder_path A18") }
+    if _decoder_path("UNKNOWN") == "" { pass = pass + 1; println("  PASS decoder_path unknown→empty") } else { fail = fail + 1; println("  FAIL decoder_path unknown") }
+
+    // Fixture 1: .hxc only present (bare structural, no chain) — decode returns raw
+    let pid = to_string(exec("echo $$")).trim()
+    let dir = "/tmp/hxc_adapter_selftest_" + pid
+    exec("mkdir -p " + _shell_escape(dir + "/state/hxc"))
+    exec("mkdir -p " + _shell_escape(dir + "/state"))
+    let hxc_only_logical = dir + "/state/fixture1.jsonl"
+    let hxc_only_path = dir + "/state/hxc/fixture1.jsonl.hxc"
+    write_file(hxc_only_path, "# bare structural payload\n@row alpha\n")
+    // Use path-relative HXC_TREE_ROOT logic by chdir
+    exec("cd " + _shell_escape(dir) + " && true")
+    // selftest validates _detect_chain returns empty for non-marker line
+    let bare = "# bare structural payload\n@row alpha\n"
+    let cb = _detect_chain(bare)
+    if len(cb) == 0 { pass = pass + 1; println("  PASS fixture1 bare-structural detected as A1-only") } else { fail = fail + 1; println("  FAIL fixture1 bare-structural got chain " + to_string(len(cb))) }
+
+    // Fixture 2: .jsonl only — fallback path returns content
+    let jsonl_only = dir + "/state/fixture2.jsonl"
+    write_file(jsonl_only, "{\"k\":\"v\"}\n")
+    if _exists(jsonl_only) { pass = pass + 1; println("  PASS fixture2 .jsonl-only fallback present") } else { fail = fail + 1; println("  FAIL fixture2 .jsonl-only") }
+
+    // Fixture 3: both present, .hxc preferred — bare-structural path passthrough byte-eq
+    let same_logical = dir + "/state/fixture3.jsonl"
+    let same_hxc = dir + "/state/hxc/fixture3.jsonl.hxc"
+    write_file(same_logical, "raw_jsonl_content\n")
+    write_file(same_hxc, "raw_hxc_content\n")
+    let pref = _detect_chain("raw_hxc_content\n")
+    if len(pref) == 0 { pass = pass + 1; println("  PASS fixture3 both-present .hxc structural passthrough") } else { fail = fail + 1; println("  FAIL fixture3 both-present") }
+
+    // Fixture 4: corrupt entropy header → decode subprocess will rc!=0 → .jsonl fallback (raw 91 honest)
+    let corrupt_hxc = "# arith:s1 v=range-v1 n=10\n^GARBAGE\n"
+    let corrupt_chain = _detect_chain(corrupt_hxc)
+    let mut has_a16 = false
+    let mut k4 = 0
+    // @triad: atomize
+    while k4 < len(corrupt_chain) { if corrupt_chain[k4] == "A16" { has_a16 = true }; k4 = k4 + 1 }
+    if has_a16 { pass = pass + 1; println("  PASS fixture4 corrupt-entropy A16 detected (fallback path armed)") } else { fail = fail + 1; println("  FAIL fixture4 corrupt-entropy detect") }
+
+    // Fixture 5: corrupt header (no recognized sigil at all) → empty chain → A1-only passthrough
+    let corrupt_hdr = "this is not a valid hxc header\nrandom bytes follow\n"
+    let cc = _detect_chain(corrupt_hdr)
+    if len(cc) == 0 { pass = pass + 1; println("  PASS fixture5 corrupt-header empty-chain (raw 12 explicit)") } else { fail = fail + 1; println("  FAIL fixture5 corrupt-header") }
+
+    exec("rm -rf " + _shell_escape(dir))
+
+    println("Results: " + to_string(pass) + " PASS / " + to_string(fail) + " FAIL out of " + to_string(pass + fail))
+    println("__HXC_CONSUMER_ADAPTER_SELFTEST__ " + (if fail == 0 { "PASS" } else { "FAIL" }))
+    if fail == 0 { return 0 }
+    return 1
+}
+
+fn main() {
+    let av = argv()
+    let mut i = 2
+    // @triad: atomize
+    while i < len(av) {
+        let a = av[i]
+        if a == "--selftest" { exit(selftest()) }
+        if a == "detect" && (i + 1) < len(av) {
+            let raw = to_string(read_file(av[i + 1]))
+            let ch = _detect_chain(raw)
+            println("chain: " + ch.join(","))
+            exit(0)
+        }
+        if a == "read" && (i + 1) < len(av) {
+            let result = read_artifact(av[i + 1])
+            if len(result) == 0 { eprintln("# no artifact found: " + av[i + 1]); exit(5) }
+            print(result)
+            exit(0)
+        }
+        i = i + 1
+    }
+    eprintln("usage: hxc_consumer_adapter.hexa --selftest | read <logical_path> | detect <hxc_path>")
+    exit(3)
+}

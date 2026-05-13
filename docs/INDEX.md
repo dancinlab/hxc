@@ -10,9 +10,9 @@
 - [`examples/02_multi_schema.hxc`](../examples/02_multi_schema.hxc) — multi-schema interleaved stream
 - [`examples/03_tree_dedup.hxc`](../examples/03_tree_dedup.hxc) — `# tree:` sub-tree dedup (A4)
 
-## Algorithm catalog (planned mirrors)
+## Algorithm catalog
 
-The full algorithm catalog A1–A35 lives in the upstream `hexa-lang/self/stdlib/hxc_a*.hexa`. A standalone mirror under `algorithms/` is planned (see repo TODO).
+- [`algorithms/`](../algorithms/) — A1–A35 stdlib mirror (34 `.hexa` modules) — see [`algorithms/README.md`](../algorithms/README.md) for full catalog.
 
 Families covered:
 
@@ -36,13 +36,13 @@ Families covered:
 | X | text-heavy prose | carve-out (semantic-class boundary) |
 | D | <1KB degenerate | exempt |
 
-## Tools (planned mirrors)
+## Tools
 
-- `tool/hxc_consumer_adapter.hexa` — universal reader
-- `tool/hxc_pilot.hexa` — measurement pilot
-- `tool/hxc_lint.hexa` — byte-canonical invariant linter
+- [`tool/`](../tool/) — reference encoder/decoder/lint utilities (mirrored from anima/hive). See [`tool/README.md`](../tool/README.md).
 
-These currently live in the upstream hexa-lang/anima/hive ecosystem.
+## CI
+
+- [`.github/workflows/lint.yml`](../.github/workflows/lint.yml) — byte-canonical invariant checks on `examples/*.hxc` (UTF-8, no BOM, LF only, no trailing whitespace, single trailing newline, no blank lines, column-0 anchors).
 
 ## Status
 
