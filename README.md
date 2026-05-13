@@ -1,10 +1,27 @@
-# ⬡ hxc
+<p align="center">
+  <img src="docs/logo.svg" width="140" alt="hxc">
+</p>
 
-**Hexa-Canonical Format** — a wire/storage format for AI-native pipelines.
+<h1 align="center">⬡ hxc</h1>
 
-Line-oriented · byte-canonical · ASCII-stable · KV-cache friendly.
+<p align="center"><strong>Hexa-Canonical Format</strong> — a wire/storage format for AI-native pipelines</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-CC0--1.0-blue"></a>
+  <a href=".github/workflows/lint.yml"><img alt="CI" src="https://github.com/dancinlab/hxc/actions/workflows/lint.yml/badge.svg"></a>
+  <img alt="Spec" src="https://img.shields.io/badge/spec-v2-success">
+  <img alt="Status" src="https://img.shields.io/badge/status-live-success">
+  <img alt="Algorithms" src="https://img.shields.io/badge/algorithms-31-informational">
+</p>
+
+<p align="center">Line-oriented · byte-canonical · ASCII-stable · KV-cache friendly</p>
+
+---
 
 HXC is what JSON/JSONL looks like when you optimize for *repeated AI context* instead of human eyeballs: schemas declared once, values pipe-separated, same logical content → byte-identical prefix → prefill reuse.
+
+> [!NOTE]
+> HXC is **not** a replacement for hexa-lang's `.raw` (SSOT-rule format). HXC is the wire form for *what currently is JSON / JSONL* — ledgers, dispatch envelopes, witness rows. The two are sister formats with disjoint scopes.
 
 ## At a glance
 
@@ -33,15 +50,39 @@ Honest pilot measurements on representative JSONL/JSON surfaces:
 | Atlas witness (Class-M mixed) | 3,002 B → 2,171 B | 27.7% |
 | Already-canonical raw text | 6,093 B → 6,078 B | 0.25% (no-op) |
 
-HXC delivers measurable wins **on JSON/JSONL surfaces with schema repetition**. On already-canonical text it is a near-no-op (correct — nothing to compress). On text-heavy prose it is a deliberate carve-out (a compression algorithm cannot fight Indo-European semantic floor at the byte level).
-
-Full per-class reachability table → [`spec/hxc.md` §Per-class reachability](spec/hxc.md).
+> [!TIP]
+> HXC delivers measurable wins **on JSON/JSONL surfaces with schema repetition**. On already-canonical text it is a near-no-op (correct — nothing to compress). On text-heavy prose it is a deliberate carve-out: a byte-level compression algorithm cannot fight Indo-European semantic floor. See [`spec/hxc.md` §Per-class reachability](spec/hxc.md).
 
 ## Algorithm catalog
 
-31 deterministic algorithms (A1–A35) cover structural dedup, tokenizer/dict, entropy coders, source-transforms, self-decoding. No neural mixers, no LZMA dep, no online learning — every algorithm is reproducible from input bytes alone.
+31 deterministic algorithms (A1–A35) — no neural mixers, no LZMA dep, no online learning. Every algorithm is reproducible from input bytes alone.
 
-Catalog overview → [`docs/INDEX.md` §Algorithm catalog](docs/INDEX.md).
+```mermaid
+flowchart TD
+    HXC["⬡ hxc — 31 algorithms"]
+    HXC --> S[Structural family]
+    HXC --> T[Tokenizer / Dict]
+    HXC --> E[Entropy coder]
+    HXC --> X[Source-transform]
+    HXC --> SD[Self-decoding]
+    HXC --> O[Other]
+
+    S --> S1["A1 · A2 · A4 · A5<br/>A8 · A11 · A12<br/>A13 · A14 · A15"]
+    T --> T1["A19 · A20 · A33"]
+    T --> T2["A9 retired 2026-04-28"]
+    E --> E1["A7 · A16 · A17 · A18<br/>A23 · A26 · A30<br/>A32 · A34"]
+    X --> X1["A24 · A25 · A29 · A35"]
+    SD --> SD1["A22"]
+    O --> O1["A10 varint"]
+
+    classDef retired fill:#fee,stroke:#c33,color:#600;
+    class T2 retired;
+```
+
+Full module list → [`algorithms/README.md`](algorithms/README.md).
+
+> [!IMPORTANT]
+> All algorithms maintain the `raw 137 cmix-ban` invariant — deterministic predictors only. This makes encoder output reproducible across machines and forbids neural-mixer dependencies that would compromise the format's portability.
 
 ## Status
 
@@ -65,7 +106,9 @@ hxc/
 ├── algorithms/       A1–A35 stdlib mirror (34 .hexa modules)
 ├── tool/             encoder/decoder/lint references
 ├── docs/
-│   └── INDEX.md      doc index
+│   ├── INDEX.md      doc index
+│   ├── DESIGN.md     README design notes
+│   └── logo.svg      hexagon mark
 └── .github/workflows/
     └── lint.yml      byte-canonical invariant CI
 ```
