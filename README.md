@@ -101,12 +101,18 @@ hxc/
 
 ### Live preview
 
-Both themes shown side-by-side — same content, different theme. Rendered with [shiki](https://shiki.style/) from the shipped grammar. Open the SVGs directly to zoom.
+Both themes rendered with [shiki](https://shiki.style/) from the shipped grammar — same content, different theme.
+
+**github-dark**
 
 <p align="center">
-  <img src="docs/preview-dark.svg" width="48%" alt="github-dark theme">
-  &nbsp;
-  <img src="docs/preview-light.svg" width="48%" alt="github-light theme">
+  <img src="docs/preview-dark.svg" alt="github-dark theme">
 </p>
 
-Browser-only view (larger, scrollable): [`docs/preview.html`](docs/preview.html). Regenerate via `node scripts/render_svg.mjs` after grammar/example changes — see [`scripts/README.md`](scripts/README.md).
+**github-light**
+
+<p align="center">
+  <img src="docs/preview-light.svg" alt="github-light theme">
+</p>
+
+Browser-only view (combined): [`docs/preview.html`](docs/preview.html). Regenerate via `node scripts/render_svg.mjs` after grammar/example changes — see [`scripts/README.md`](scripts/README.md).
