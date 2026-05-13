@@ -59,28 +59,6 @@ Honest pilot measurements on representative JSONL/JSON surfaces:
 
 31 deterministic algorithms (A1–A35) — no neural mixers, no LZMA dep, no online learning. Every algorithm is reproducible from input bytes alone.
 
-```mermaid
-flowchart TD
-    HXC["⬡ hxc — 31 algorithms"]
-    HXC --> S[Structural family]
-    HXC --> T[Tokenizer / Dict]
-    HXC --> E[Entropy coder]
-    HXC --> X[Source-transform]
-    HXC --> SD[Self-decoding]
-    HXC --> O[Other]
-
-    S --> S1["A1 · A2 · A4 · A5<br/>A8 · A11 · A12<br/>A13 · A14 · A15"]
-    T --> T1["A19 · A20 · A33"]
-    T --> T2["A9 retired 2026-04-28"]
-    E --> E1["A7 · A16 · A17 · A18<br/>A23 · A26 · A30<br/>A32 · A34"]
-    X --> X1["A24 · A25 · A29 · A35"]
-    SD --> SD1["A22"]
-    O --> O1["A10 varint"]
-
-    classDef retired fill:#fee,stroke:#c33,color:#600;
-    class T2 retired;
-```
-
 Full module list → [`algorithms/README.md`](algorithms/README.md).
 
 > [!IMPORTANT]
