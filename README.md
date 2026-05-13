@@ -101,11 +101,12 @@ hxc/
 
 ### Live preview
 
-Inline below — GitHub auto-switches between `github-dark` and `github-light` to match your theme. Rendered with [shiki](https://shiki.style/) from the shipped grammar.
+Both themes shown side-by-side — same content, different theme. Rendered with [shiki](https://shiki.style/) from the shipped grammar. Open the SVGs directly to zoom.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/preview-dark.svg">
-  <img alt="hxc syntax preview (examples/*.hxc rendered with github theme)" src="docs/preview-light.svg">
-</picture>
+<p align="center">
+  <img src="docs/preview-dark.svg" width="48%" alt="github-dark theme">
+  &nbsp;
+  <img src="docs/preview-light.svg" width="48%" alt="github-light theme">
+</p>
 
-Browser-only view (side-by-side both themes, larger): [`docs/preview.html`](docs/preview.html). Regenerate either after grammar/example changes — see [`scripts/README.md`](scripts/README.md).
+Browser-only view (larger, scrollable): [`docs/preview.html`](docs/preview.html). Regenerate via `node scripts/render_svg.mjs` after grammar/example changes — see [`scripts/README.md`](scripts/README.md).
