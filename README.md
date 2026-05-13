@@ -98,3 +98,7 @@ hxc/
 ## Editor support
 
 `.hxc` is not yet a registered language on [github/linguist](https://github.com/github-linguist/linguist), so GitHub does not natively highlight `.hxc` fences. The repo ships a TextMate grammar that any modern editor can load — see [`syntaxes/README.md`](syntaxes/README.md) for VS Code / Sublime / TextMate install steps. Roadmap to upstream registration is in [`docs/DESIGN.md` §6](docs/DESIGN.md).
+
+### Live preview
+
+Open [`docs/preview.html`](docs/preview.html) in any browser — every example under `examples/` is rendered side-by-side with `github-dark` and `github-light` themes, using the shipped grammar via [shiki](https://shiki.style/). No editor, extension, or install required. Regenerate after grammar/example changes with `node scripts/render_preview.mjs` (see [`scripts/README.md`](scripts/README.md)).

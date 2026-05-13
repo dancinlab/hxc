@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>⬡ hxc — syntax highlighting preview</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    background: #fafafa;
+    color: #111;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #0d1117; color: #e6edf3; }
+    a { color: #58a6ff; }
+  }
+  h1 { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  h2 {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1rem;
+    color: #6e7681;
+    margin-top: 2.5rem;
+    border-bottom: 1px solid #30363d33;
+    padding-bottom: 0.3rem;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+  pre {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.55;
+    overflow-x: auto;
+    border: 1px solid #30363d33;
+  }
+  .label {
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+    color: #6e7681;
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+  .meta { color: #6e7681; font-size: 0.9em; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+</style>
+</head><body>
+<h1>⬡ hxc — syntax preview</h1>
+<p class="meta">Rendered with <a href="https://shiki.style/">shiki</a> using the grammar at <code>syntaxes/hxc.tmLanguage.json</code>. Left = <code>github-dark</code>, right = <code>github-light</code>. Open this file in any browser — no editor or extension required.</p>
+
+<h2>examples/01_single_schema.hxc</h2>
+<div class="row">
+  <div><div class="label">github-dark</div><pre class="shiki github-dark" style="background-color:#24292e;color:#e1e4e8" tabindex="0"><code><span class="line"><span style="color:#F97583"># schema:</span><span style="color:#B392F0">s1</span><span style="color:#FFAB70"> schema ts action balance_usd prev_balance_usd delta_usd cumulative_burn_usd</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "anima/cost_ledger/1"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"2026-04-22T16:03:14Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"session"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"135.842"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">""</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">""</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"0.5000"</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "anima/cost_ledger/1"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"2026-04-22T16:10:25Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"session"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"135.842"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"135.842"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"0.0000"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"0.5000"</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "anima/cost_ledger/1"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"2026-04-22T17:01:08Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"session"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"136.110"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"135.842"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"0.2680"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"0.7680"</span></span>
+<span class="line"></span></code></pre></div>
+  <div><div class="label">github-light</div><pre class="shiki github-light" style="background-color:#fff;color:#24292e" tabindex="0"><code><span class="line"><span style="color:#D73A49"># schema:</span><span style="color:#6F42C1">s1</span><span style="color:#E36209"> schema ts action balance_usd prev_balance_usd delta_usd cumulative_burn_usd</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "anima/cost_ledger/1"</span><span style="color:#24292E">|</span><span style="color:#032F62">"2026-04-22T16:03:14Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"session"</span><span style="color:#24292E">|</span><span style="color:#032F62">"135.842"</span><span style="color:#24292E">|</span><span style="color:#032F62">""</span><span style="color:#24292E">|</span><span style="color:#032F62">""</span><span style="color:#24292E">|</span><span style="color:#032F62">"0.5000"</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "anima/cost_ledger/1"</span><span style="color:#24292E">|</span><span style="color:#032F62">"2026-04-22T16:10:25Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"session"</span><span style="color:#24292E">|</span><span style="color:#032F62">"135.842"</span><span style="color:#24292E">|</span><span style="color:#032F62">"135.842"</span><span style="color:#24292E">|</span><span style="color:#032F62">"0.0000"</span><span style="color:#24292E">|</span><span style="color:#032F62">"0.5000"</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "anima/cost_ledger/1"</span><span style="color:#24292E">|</span><span style="color:#032F62">"2026-04-22T17:01:08Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"session"</span><span style="color:#24292E">|</span><span style="color:#032F62">"136.110"</span><span style="color:#24292E">|</span><span style="color:#032F62">"135.842"</span><span style="color:#24292E">|</span><span style="color:#032F62">"0.2680"</span><span style="color:#24292E">|</span><span style="color:#032F62">"0.7680"</span></span>
+<span class="line"></span></code></pre></div>
+</div>
+
+<h2>examples/02_multi_schema.hxc</h2>
+<div class="row">
+  <div><div class="label">github-dark</div><pre class="shiki github-dark" style="background-color:#24292e;color:#e1e4e8" tabindex="0"><code><span class="line"><span style="color:#F97583"># schema:</span><span style="color:#B392F0">s1</span><span style="color:#FFAB70"> ts event source sha256</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "2026-04-22T13:02:34Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"init"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"laws.json"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"3e9ace3b01b9adc71382a15818127fa3d29291a83630e9be2242f23ca0b66071"</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "2026-04-22T14:11:09Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"update"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"laws.json"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"7c2a4f1d92ab8e5b4a1c6e3d7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60"</span></span>
+<span class="line"><span style="color:#F97583"># schema:</span><span style="color:#B392F0">s2</span><span style="color:#FFAB70"> ts gate verdict note</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s2</span><span style="color:#9ECBFF"> "2026-04-22T15:00:00Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"honesty_triad"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"pass"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"C3 full"</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s2</span><span style="color:#9ECBFF"> "2026-04-22T15:30:00Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"shannon_floor"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"pass"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"H_4=0.813"</span></span>
+<span class="line"></span></code></pre></div>
+  <div><div class="label">github-light</div><pre class="shiki github-light" style="background-color:#fff;color:#24292e" tabindex="0"><code><span class="line"><span style="color:#D73A49"># schema:</span><span style="color:#6F42C1">s1</span><span style="color:#E36209"> ts event source sha256</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "2026-04-22T13:02:34Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"init"</span><span style="color:#24292E">|</span><span style="color:#032F62">"laws.json"</span><span style="color:#24292E">|</span><span style="color:#032F62">"3e9ace3b01b9adc71382a15818127fa3d29291a83630e9be2242f23ca0b66071"</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "2026-04-22T14:11:09Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"update"</span><span style="color:#24292E">|</span><span style="color:#032F62">"laws.json"</span><span style="color:#24292E">|</span><span style="color:#032F62">"7c2a4f1d92ab8e5b4a1c6e3d7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60"</span></span>
+<span class="line"><span style="color:#D73A49"># schema:</span><span style="color:#6F42C1">s2</span><span style="color:#E36209"> ts gate verdict note</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s2</span><span style="color:#032F62"> "2026-04-22T15:00:00Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"honesty_triad"</span><span style="color:#24292E">|</span><span style="color:#032F62">"pass"</span><span style="color:#24292E">|</span><span style="color:#032F62">"C3 full"</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s2</span><span style="color:#032F62"> "2026-04-22T15:30:00Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"shannon_floor"</span><span style="color:#24292E">|</span><span style="color:#032F62">"pass"</span><span style="color:#24292E">|</span><span style="color:#032F62">"H_4=0.813"</span></span>
+<span class="line"></span></code></pre></div>
+</div>
+
+<h2>examples/03_tree_dedup.hxc</h2>
+<div class="row">
+  <div><div class="label">github-dark</div><pre class="shiki github-dark" style="background-color:#24292e;color:#e1e4e8" tabindex="0"><code><span class="line"><span style="color:#F97583"># schema:</span><span style="color:#B392F0">s1</span><span style="color:#FFAB70"> ts witness_id level event fixed_point pass_verdict note</span></span>
+<span class="line"><span style="color:#6A737D"># </span><span style="color:#F97583">tree</span><span style="color:#E1E4E8">:</span><span style="color:#FFAB70">0.A 2d38ad85:{"mistral_base":-16.6959,"qwen3_instr":1.04,"llama_base":5.0868}</span></span>
+<span class="line"><span style="color:#6A737D"># </span><span style="color:#F97583">tree</span><span style="color:#E1E4E8">:</span><span style="color:#FFAB70">1.B a41304ff:{1,2,3,4,5,6,10,12,32}</span></span>
+<span class="line"><span style="color:#6A737D"># </span><span style="color:#F97583">tree</span><span style="color:#E1E4E8">:</span><span style="color:#FFAB70">2.C 45048081:{llama_instruct,qwen3_base,gemma_instruct}</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "2026-04-25T08:00:00Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"w001"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"L0"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"convergence"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"#tree:0.A"</span><span style="color:#E1E4E8">|</span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"mk_xi r9"</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "2026-04-25T08:30:00Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"w002"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"L1"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"convergence"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"#tree:1.B"</span><span style="color:#E1E4E8">|</span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"layer sweep"</span></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#85E89D">s1</span><span style="color:#9ECBFF"> "2026-04-25T09:00:00Z"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"w003"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"L2"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"convergence"</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"#tree:2.C"</span><span style="color:#E1E4E8">|</span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">|</span><span style="color:#9ECBFF">"model triad"</span></span>
+<span class="line"></span></code></pre></div>
+  <div><div class="label">github-light</div><pre class="shiki github-light" style="background-color:#fff;color:#24292e" tabindex="0"><code><span class="line"><span style="color:#D73A49"># schema:</span><span style="color:#6F42C1">s1</span><span style="color:#E36209"> ts witness_id level event fixed_point pass_verdict note</span></span>
+<span class="line"><span style="color:#6A737D"># </span><span style="color:#D73A49">tree</span><span style="color:#24292E">:</span><span style="color:#E36209">0.A 2d38ad85:{"mistral_base":-16.6959,"qwen3_instr":1.04,"llama_base":5.0868}</span></span>
+<span class="line"><span style="color:#6A737D"># </span><span style="color:#D73A49">tree</span><span style="color:#24292E">:</span><span style="color:#E36209">1.B a41304ff:{1,2,3,4,5,6,10,12,32}</span></span>
+<span class="line"><span style="color:#6A737D"># </span><span style="color:#D73A49">tree</span><span style="color:#24292E">:</span><span style="color:#E36209">2.C 45048081:{llama_instruct,qwen3_base,gemma_instruct}</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "2026-04-25T08:00:00Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"w001"</span><span style="color:#24292E">|</span><span style="color:#032F62">"L0"</span><span style="color:#24292E">|</span><span style="color:#032F62">"convergence"</span><span style="color:#24292E">|</span><span style="color:#032F62">"#tree:0.A"</span><span style="color:#24292E">|</span><span style="color:#005CC5">true</span><span style="color:#24292E">|</span><span style="color:#032F62">"mk_xi r9"</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "2026-04-25T08:30:00Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"w002"</span><span style="color:#24292E">|</span><span style="color:#032F62">"L1"</span><span style="color:#24292E">|</span><span style="color:#032F62">"convergence"</span><span style="color:#24292E">|</span><span style="color:#032F62">"#tree:1.B"</span><span style="color:#24292E">|</span><span style="color:#005CC5">true</span><span style="color:#24292E">|</span><span style="color:#032F62">"layer sweep"</span></span>
+<span class="line"><span style="color:#24292E">@</span><span style="color:#22863A">s1</span><span style="color:#032F62"> "2026-04-25T09:00:00Z"</span><span style="color:#24292E">|</span><span style="color:#032F62">"w003"</span><span style="color:#24292E">|</span><span style="color:#032F62">"L2"</span><span style="color:#24292E">|</span><span style="color:#032F62">"convergence"</span><span style="color:#24292E">|</span><span style="color:#032F62">"#tree:2.C"</span><span style="color:#24292E">|</span><span style="color:#005CC5">true</span><span style="color:#24292E">|</span><span style="color:#032F62">"model triad"</span></span>
+<span class="line"></span></code></pre></div>
+</div>
+
+<p class="meta" style="margin-top:3rem;">Generated by <code>scripts/render_preview.mjs</code>. To regenerate after editing the grammar: <code>node scripts/render_preview.mjs</code>.</p>
+</body></html>
