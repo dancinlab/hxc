@@ -52,10 +52,11 @@
 
 @I id001 := "hxc" :: identity-claim [d=2026-05-14 active]
   kind = "byte-canonical wire format — HXC v2 · KV-cache stable · cross-host ship"
+  brief = "byte-canonical wire · HXC v2 · KV-cache stable · cross-host ship"
   tagline = "Hexa-Canonical Format · line-oriented · ASCII-stable · KV-cache friendly"
   axis = "wire/storage format for AI-native pipelines · repeated-context prefill reuse"
   algorithms = "31 deterministic algorithms (A1-A35) · raw 137 cmix-ban invariant · no neural mixers"
-  parent = "dancinlab ecosystem · cites echoes/LATTICE_POLICY.md as authority"
+  parent = "dancinlab"
 
 @I id002 := "hxc.sibling-role" :: identity-claim [d=2026-05-14 active]
   <: id001
@@ -104,7 +105,6 @@
 
 @D g3 := "honesty-obligation-external" :: governance [required deny:write]
   rule = "Claims about external entities (compression libs · model vendors · standards bodies) must NOT include lattice-fit assertions. Use their OWN invariants."
-  authority = "raw#10 C3 · [@x_lattice_policy] §1.3"
   @> AGENTS.md
 
 @D g4 := "commit-conventions" :: governance [recommended]
@@ -141,7 +141,6 @@
 
 @X x_lattice_policy := "echoes/LATTICE_POLICY.md" :: policy [d=2026-05-12 active]
   url = "https://github.com/dancinlab/echoes/blob/main/LATTICE_POLICY.md"
-  scope = "cross-project SSOT — real-limits-first · external-entity ban · raw#10 C3"
 
 @X x_tape_spec := "tape v1.2 spec" :: spec [d=2026-05-14 active]
   url = "https://github.com/dancinlab/tape/blob/main/spec/tape.md"
