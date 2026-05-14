@@ -70,6 +70,65 @@ Full module list → [`algorithms/README.md`](algorithms/README.md).
 - **mk2 dogfooded** (2026-05-02) — `core/hxc_format/` plug-in module with `HXC2` magic, multi-rule indexed
 - **v3 planned** — per-class lint gating, unified encoder dispatcher
 
+## Install
+
+HXC ships as a reference algorithm catalog in [hexa-lang](https://github.com/dancinlab/hexa-fusion) — there is no standalone `hxc` CLI binary yet. The two install paths:
+
+```sh
+# 1. Install hexa-lang (gives you `hexa` to run the algorithm modules directly)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/dancinlab/hexa-lang/main/install.sh)"
+
+# 2. Clone hxc (algorithms + spec + examples)
+git clone https://github.com/dancinlab/hxc ~/core/hxc
+cd ~/core/hxc
+```
+
+Each `algorithms/hxc_a<N>_<name>.hexa` is invoked via `hexa run` — see `## Run` below. The algorithms are mirrored from `hexa-lang/self/stdlib/`, so a hexa-lang install already carries them; the standalone `~/core/hxc/` checkout is the canonical reference + spec + lint CI surface. A unified `hxc` dispatcher CLI is on the v3 roadmap.
+
+## Run
+
+```sh
+# every algorithm module exposes the same 4-verb CLI surface
+hexa run algorithms/hxc_a4_structural.hexa --selftest
+hexa run algorithms/hxc_a4_structural.hexa encode input.jsonl out.hxc
+hexa run algorithms/hxc_a4_structural.hexa decode out.hxc roundtrip.jsonl
+hexa run algorithms/hxc_a4_structural.hexa measure input.jsonl       # → bytes-in / bytes-out / ratio
+
+# byte-canonical wire — HXC v2 encode/decode (composite chain dispatches to all 31 algorithms)
+hexa run algorithms/hxc_composite_chain_v2.hexa encode ledger.jsonl ledger.hxc
+hexa run algorithms/hxc_composite_chain_v2.hexa decode ledger.hxc ledger.roundtrip.jsonl
+diff -q ledger.jsonl ledger.roundtrip.jsonl                          # byte-identical roundtrip
+
+# KV-cache stability probe — same logical input → byte-identical prefix
+hexa run tool/hxc_pre_encoder.hexa --kv-probe ledger.jsonl           # report longest shared prefix vs prior encode
+
+# cross-host ship — base94 wire envelope (ASCII-stable, terminal-safe)
+hexa run algorithms/hxc_base94_codec.hexa encode ledger.hxc ledger.hxc.b94
+scp ledger.hxc.b94 host2:/tmp/                                       # cross-host transfer
+ssh host2 hexa run ~/core/hxc/algorithms/hxc_base94_codec.hexa decode /tmp/ledger.hxc.b94 /tmp/ledger.hxc
+
+# per-class measurement (A4 structural · A16 arithmetic · A20 schema-aware BPE · A33 cross-repo dict)
+hexa run algorithms/hxc_a16_arithmetic_coder.hexa measure witness.jsonl
+hexa run algorithms/hxc_a20_schema_aware_bpe.hexa  measure registry.json
+hexa run algorithms/hxc_a33_cross_repo_dict.hexa   measure corpus/
+
+# entry-point modules for the 31-algorithm catalog (A1–A35; A1/A2/A5 inherent, A9 retired)
+hexa run algorithms/hxc_a7_shared_dict.hexa        --selftest
+hexa run algorithms/hxc_a17_ppm_order3.hexa        --selftest
+hexa run algorithms/hxc_a30_bwt_mtf.hexa           --selftest
+hexa run algorithms/hxc_a34_sub_byte_arith.hexa    --selftest
+hexa run algorithms/hxc_a35_source_transform.hexa  --selftest
+
+# composite dispatcher + corpus manifest (multi-file federated encode)
+hexa run tool/hxc_composite_dispatcher.hexa encode-corpus ~/.wilson/recap/ recap.hxc
+hexa run tool/hxc_corpus_manifest.hexa     build ~/.wilson/recap/ manifest.hxc
+
+# lint / canary watcher (CI invariants — byte-canonical + raw-137 cmix-ban)
+hexa run tool/hxc_d1_canary_watcher.hexa   ~/core/hxc/examples/
+```
+
+See [`algorithms/README.md`](algorithms/README.md) for the full module table grouped by family (structural · tokenizer · entropy · source-transform).
+
 ## License
 
 [CC0-1.0](LICENSE) — public domain. Use freely.
