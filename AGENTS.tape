@@ -55,7 +55,7 @@
   brief = "byte-canonical wire · HXC v2 · KV-cache stable · cross-host ship"
   tagline = "Hexa-Canonical Format · line-oriented · ASCII-stable · KV-cache friendly"
   axis = "wire/storage format for AI-native pipelines · repeated-context prefill reuse"
-  algorithms = "31 deterministic algorithms (A1-A35) · raw 137 cmix-ban invariant · no neural mixers"
+  algorithms = "31 deterministic algorithms (A1-A35) · cmix-ban invariant · no neural mixers"
   parent = "dancinlab"
 
 @I id002 := "hxc.sibling-role" :: identity-claim [d=2026-05-14 active]

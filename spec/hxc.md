@@ -2,11 +2,11 @@
 
 > Standalone mirror of the canonical spec. Path references to `tool/`, `self/stdlib/`, anima docs, and hive convergence ledgers are provenance markers pointing to the original hexa-lang/anima/hive ecosystem where HXC was developed. The format itself is self-contained and fully described below.
 
-Wire/storage format for AI-native pipelines. Sister of hexa-lang `.raw` (raw 2 self-format) — `.raw` is the SSOT-rule SPEC, HXC is the WIRE/STORAGE form for non-rule artifacts (JSONL ledgers, dispatch envelopes, witness rows). HXC is **NOT** a replacement for `.raw`; it is the format for *what currently is JSON/JSONL* in this repo.
+Wire/storage format for AI-native pipelines. Byte-canonical, ASCII-stable, line-oriented, KV-cache prefix stable. HXC absorbs the machine-readable surface — JSON / JSONL ledgers, dispatch envelopes, witness rows, audit streams, config blobs. Human-edit SSOT and governance live in sibling formats (`.tape` v1.2 for event logs; `AGENTS.tape` `@D` entries for governance rules; markdown for prose / RFC).
 
-Status: **live (v2)**. Promotion path: raw 92 (`format-ai-native-canonical`) + raw 137 (`format-compression-pareto-frontier-80pct-shannon`) + raw 157 (`hxc-wire-encoding-base85-mandate`).
+Status: **live (v2)** — see Versioning below for the v1 → v2 amendment record.
 
-v1 → v2 transition (r29 STRENGTHEN, 2026-04-30): algorithm catalog A1-A6 forward-spec → A4-A35 31 modules LIVE in hexa-lang stdlib (`self/stdlib/hxc_a*.hexa`); A9 RETIRED 2026-04-28; per-class reachability table added per raw 137 80% target empirical disambiguation.
+v1 → v2 transition (2026-04-30): algorithm catalog A1-A6 forward-spec → A4-A35 31 modules LIVE in hexa-lang stdlib (`self/stdlib/hxc_a*.hexa`); A9 RETIRED 2026-04-28; per-class reachability table added for the 80% Shannon-floor target empirical disambiguation.
 
 ## Why
 
@@ -14,22 +14,22 @@ Honest pilot measurements (cumulative 2026-04-26 → 2026-04-30):
 
 | Pilot | Surface | Native → HXC | Saving | Status |
 |---|---|---|---|---|
-| A | `.raw` raw 86 section (already raw-canonical) | 6093B → 6078B | 0.25% | no-op (correct) |
 | B | `state/atlas_convergence_witness.jsonl` (8 rows / 2 schemas) | 3002B → 2171B | 27.7% | A1+A2 baseline |
 | r29-T1 | `state/init/audit.jsonl` (Class-T, schema-rich) | 48774B → 1595B | 96.73% | A1+A8+A4 chain |
 | r29-T2 | `state/hive_cli_audit/audit.jsonl` (Class-T) | 122345B → 8840B | 92.77% | A1+A8 chain |
 | r29-J1 | `state/raw_addition_requests/registry.jsonl` (Class-J large) | 128229B → 18049B | 85.92% | A1+A4+A12 chain |
 | r29-M | `state/atlas_convergence_witness.jsonl` (Class-M, re-measured) | 3577B → 2516B | 29.66% | A1+A2 (no entropy coder fired) |
 
-Conclusion: HXC delivers measurable wins **on JSON/JSONL surfaces with schema repetition**. On already-canonical `.raw` surfaces it is a no-op (correct — raw 2 already does the work). 80% target reachability per raw 137 is **content-class dependent** — see §Per-class reachability table below.
+Conclusion: HXC delivers measurable wins **on JSON/JSONL surfaces with schema repetition**. 80% Shannon-floor reachability is **content-class dependent** — see §Per-class reachability table below.
 
 ## Surfaces in scope
 
-- `state/*/*.jsonl` — append-only ledgers (raw 77 audit ledger, raw 91 honesty triad audit, raw 88 transition gate, etc.)
+- `state/*/*.jsonl` — append-only ledgers (audit / honesty triad / transition gate streams etc.)
 - `state/design_strategy_trawl/*.json` — cycle-JSON artifacts
-- `.hook-commands/active.json` — runtime invocation stack (raw 84 forward-spec)
+- `.hook-commands/active.json` — runtime invocation stack
 - `state/blockers/*.json` payloads
-- **Out of scope**: `.raw` `.own` `.roadmap` `.ext` `.guide` `.turn` `.end` `.command` — these are SSOT root files, raw 2 self-format already canonical.
+- Generally: any machine-readable structured stream previously encoded as JSON / JSONL.
+- **Out of scope**: `.tape` event logs (sibling format; append-only by design) and `AGENTS.tape` governance (declarative `@D` rules, human-edit SSOT). Markdown prose and RFCs stay markdown.
 
 ## Form
 
@@ -82,13 +82,13 @@ HXC is line-oriented, byte-canonical, ASCII-stable. One record per line. Schema 
 
 These rules give: same logical content → byte-identical prefix → KV-cache prefill reuse on repeated context.
 
-### Wire encoding (raw 157)
+### Wire encoding
 
-base85 raw printable ASCII (5/4 expansion, sigil-safe) — selected via raw 240 v2 weighted rubric across 3 wire candidates 2026-04-28 (Option A base64url 4/3 expansion REGRESSION on text / Option B base85 NET POSITIVE on n6 atlas / Option C per-bit binary REJECTED raw 92 ai-native-canonical violation). All entropy-coder outputs (A16/A17/A18/A19/A33/A34) wrap raw bytes in base85 to preserve byte-canonical invariants.
+base85 raw printable ASCII (5/4 expansion, sigil-safe) — selected via weighted rubric across 3 wire candidates 2026-04-28 (Option A base64url 4/3 expansion REGRESSION on text / Option B base85 NET POSITIVE on n6 atlas / Option C per-bit binary REJECTED on ai-native-canonical grounds). All entropy-coder outputs (A16/A17/A18/A19/A33/A34) wrap raw bytes in base85 to preserve byte-canonical invariants.
 
-## Algorithm catalog (raw 93 algorithm-witness pairing)
+## Algorithm catalog
 
-31 algorithms LIVE in hexa-lang stdlib `self/stdlib/hxc_a*.hexa` as of 2026-04-30. raw 137 cmix-ban MAINTAINED across all entries (deterministic predictors only — no neural mixer, no LZMA dep, no online-learning).
+31 algorithms LIVE in hexa-lang stdlib `self/stdlib/hxc_a*.hexa` as of 2026-04-30. **cmix-ban invariant** MAINTAINED across all entries: deterministic predictors only — no neural mixer, no LZMA dep, no online-learning. This keeps encoder output reproducible across machines and forbids non-portable mixer dependencies.
 
 ### Structural family (Tier-A 80% target sufficient on Class-T)
 
@@ -135,7 +135,7 @@ base85 raw printable ASCII (5/4 expansion, sigil-safe) — selected via raw 240 
 | **A24** | hxc_a24_grammar_induction (+ v2_bounded) | corpus grammar induction PCFG-style + adaptive order-1 byte-context residual; sigil `^X` | LIVE (first-tick) |
 | **A25** | hxc_a25_type_aware | type-aware encoding | LIVE |
 | **A29** | hxc_a29_deflate | deflate-class | LIVE — anima 50.83% / n6 60.62% measured |
-| **A35** | hxc_a35_source_transform | schema-aware column reorder (Stage 1) + integer delta varint (Stage 2) + dictionary tokenization (Stage 3); pre-A1-raw axis (raw 156 placement-orthogonality); sigil `^o` | LIVE — v2 Stage 1+2+3 ACTIVE |
+| **A35** | hxc_a35_source_transform | schema-aware column reorder (Stage 1) + integer delta varint (Stage 2) + dictionary tokenization (Stage 3); pre-A1 axis (placement-orthogonality); sigil `^o` | LIVE — v2 Stage 1+2+3 ACTIVE |
 
 ### Self-decoding family
 
@@ -149,7 +149,7 @@ base85 raw printable ASCII (5/4 expansion, sigil-safe) — selected via raw 240 
 |---|---|---|---|
 | **A10** | hxc_a10_varint | bit-packed varint (protobuf/leb128 zigzag); `# ints:` header | LIVE — projects +1-3pp integer-rich JSONL |
 
-## Per-class reachability table (raw 137 80% target)
+## Per-class reachability table (80% Shannon-floor target)
 
 Per anima 2026-04-28 entropy_floor_measurement.jsonl + r29 hive cohort 2026-04-30 (cumulative empirical):
 
@@ -162,7 +162,7 @@ Per anima 2026-04-28 entropy_floor_measurement.jsonl + r29 hive cohort 2026-04-3
 | **X** | text-heavy prose (.md / .roadmap) | 4.4-5.5 bit/byte | ❌ **CARVE-OUT** | language-impossible at byte level (Indo-European structure floor); semantic-class re-spec required | anima alm_r13 24% / n6 papers 28-44%; **NOT a compression algorithm gap — semantic-class boundary** |
 | **D** | degenerate small (<1KB) | n/a | ❌ **EXEMPT** | Shannon overhead exceeds payload; identity passthrough correct | r29 audit_escalation_pending 0% on 319B |
 
-## Algorithm-witness pairing (raw 93)
+## Algorithm-witness pairing
 
 Each algorithm declares (a) `measurement-axis` (b) `witness-path` (c) `falsifier-threshold`. Witnesses live under `state/format_witness/` (hive) and `anima/state/format_witness/` (cross-repo).
 
@@ -170,7 +170,7 @@ Each algorithm declares (a) `measurement-axis` (b) `witness-path` (c) `falsifier
 
 - Axis: byte count
 - Witness: `tool/hxc_pilot.hexa` Pilot A
-- Falsifier: HXC bytes > native bytes on already-canonical `.raw` (regression ban)
+- Falsifier: HXC bytes > native bytes on already-canonical structured streams (regression ban)
 - 2026-04-26 result: 6078 / 6093 = **0.998** (passed; near-zero overhead)
 
 ### A1+A8 schema-hash + delta encoding
@@ -203,25 +203,19 @@ Each algorithm declares (a) `measurement-axis` (b) `witness-path` (c) `falsifier
 ## Versioning
 
 - v1 (2026-04-26 forward-spec): bytes-only canonical, schema-hash delta, optional JSON sub-payloads
-- **v2 (this doc, 2026-04-30 LIVE)**: 31-algorithm catalog A4-A35; per-class reachability table; A9 RETIRED; raw 157 base85 wire mandate; raw 156 placement-orthogonality (pre-A1-raw / post-A1 / secondary-stacking / cross-file)
-- v3 (future): per-class lint gating (r29 follow-up #3); encoder dispatcher unified surface; tokenizer-class A20 vocab persistence
+- **v2 (this doc, 2026-04-30 LIVE)**: 31-algorithm catalog A4-A35; per-class reachability table; A9 RETIRED; base85 wire mandate; placement-orthogonality (pre-A1 / post-A1 / secondary-stacking / cross-file)
+- v3 (future): per-class lint gating; encoder dispatcher unified surface; tokenizer-class A20 vocab persistence
 
 ## Cross-references
 
-- raw 2 self-format — `.raw` SSOT format (HXC parent in spirit; HXC defers to raw 2 on `.raw`)
-- raw 77 execution-audit-append-only-ledger — first migration target (JSONL ledger surface)
-- raw 80 execution-sentinel-result-decoding — sub-tree dedup pairing
-- raw 86 design-cost-attribution-required-forward-spec — same forward-spec promotion pattern
-- raw 91 design-honesty-triad-process-quality — cycle-JSON measurement integrity gate
-- raw 92 format-ai-native-canonical — HXC parent rule
-- raw 93 algorithm-ai-native-required-witness — A* algorithm-witness pairing
-- raw 137 format-compression-pareto-frontier-80pct-shannon — 80% target Pareto frontier (cmix-ban)
-- raw 156 placement-orthogonality-mandate — axis (ii) placement
-- raw 157 hxc-wire-encoding-base85-mandate — wire ceiling axis (i)
-- raw 160 consumer-canary 7d
-- raw 161 cross-file-shared-dictionary-cross-link
-- nexus / airgenome (cross-repo drift) — adoption candidates for raw 92 contract
-- anima `docs/hxc_physical_math_limit_saturation_20260427_landing.md` — parent ω-cycle (raw 72 tri-axis ceiling)
-- anima `docs/hxc_a9_retirement_a20_priority_shift_20260428.md` — A9 retirement
+- **AI-native canonical format** — HXC parent principle; deterministic / byte-stable / KV-cache prefix reuse
+- **Algorithm-witness pairing** — every A* entry has `measurement-axis` / `witness-path` / `falsifier-threshold` (see §Algorithm-witness pairing above)
+- **80% Shannon-floor Pareto frontier (cmix-ban)** — compression ceiling target per content-class
+- **Placement-orthogonality** — algorithms compose on 4 axes: pre-A1 (source-transform) / post-A1 (residual) / secondary-stacking / cross-file dict
+- **base85 wire encoding** — ASCII-safe envelope for entropy-coder byte outputs (axis-i wire ceiling)
+- **Consumer-canary 7d** — adoption gate prior to promotion
+- **Cross-file shared dictionary** — A19 / A33 federation primitive
+- **Cross-repo adoption candidates**: nexus / airgenome / anima (ω-cycle parent docs)
+- anima `docs/hxc_a9_retirement_a20_priority_shift_20260428.md` — A9 retirement attestation
 - anima `state/format_witness/2026-04-28_anima_n6_entropy_floor_measurement.jsonl` — Class-X carve-out empirical anchor
-- hive `convergence/r29_2026_04_30_raw_137_80pct_shannon_pareto_honest_c3.convergence` — r29 ledger
+- hexa-lang `AGENTS.tape` `@D` governance — SSOT for cross-format positioning

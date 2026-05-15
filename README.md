@@ -21,7 +21,7 @@
 HXC is what JSON/JSONL looks like when you optimize for *repeated AI context* instead of human eyeballs: schemas declared once, values pipe-separated, same logical content → byte-identical prefix → prefill reuse.
 
 > [!NOTE]
-> HXC is **not** a replacement for hexa-lang's `.raw` (SSOT-rule format). HXC is the wire form for *what currently is JSON / JSONL* — ledgers, dispatch envelopes, witness rows. The two are sister formats with disjoint scopes.
+> HXC absorbs the machine-readable surface — JSON / JSONL ledgers, dispatch envelopes, witness rows, audit streams, config blobs. Human-edit SSOT and governance live in sibling formats: `.tape` v1.2 for append-only event logs, `AGENTS.tape` `@D` entries for governance rules, markdown for prose / RFC.
 
 ## At a glance
 
@@ -62,7 +62,7 @@ Honest pilot measurements on representative JSONL/JSON surfaces:
 Full module list → [`algorithms/README.md`](algorithms/README.md).
 
 > [!IMPORTANT]
-> All algorithms maintain the `raw 137 cmix-ban` invariant — deterministic predictors only. This makes encoder output reproducible across machines and forbids neural-mixer dependencies that would compromise the format's portability.
+> All algorithms maintain the **cmix-ban invariant** — deterministic predictors only. This makes encoder output reproducible across machines and forbids neural-mixer dependencies that would compromise the format's portability.
 
 ## Status
 
