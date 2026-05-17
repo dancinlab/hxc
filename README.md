@@ -175,6 +175,15 @@ Verified against all `examples/*.hxc` (0 errors) and a broken fixture
 it via `.lsp.json`:
 `{ "hxc": { "command": "hxc-lsp", "extensionToLanguage": {".hxc":"hxc"} } }`.
 
+### tree-sitter grammar (`tree-sitter-hxc/`)
+
+A tree-sitter grammar for editors on the tree-sitter stack (Neovim, Helix,
+Zed, Emacs). Total line model — every line resolves to `comment` / `data`
+/ `text` / `blank`, exposing `comment` (incl. `# schema:` headers) and
+`schema_id` nodes for `queries/highlights.scm`. Verified: `tree-sitter
+parse` reaches **0 ERROR** on all `examples/*.hxc`. Build:
+`cd tree-sitter-hxc && tree-sitter generate`.
+
 ### Live preview
 
 Both themes rendered with [shiki](https://shiki.style/) from the shipped grammar — same content, different theme.

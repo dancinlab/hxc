@@ -1,0 +1,11 @@
+{
+  "name": "tree-sitter-hxc",
+  "version": "0.1.0",
+  "description": "tree-sitter grammar for the .hxc format",
+  "repository": "https://github.com/dancinlab/hxc",
+  "license": "CC0-1.0",
+  "keywords": ["tree-sitter", "parser", "hxc", "dancinlab"],
+  "tree-sitter": [
+    { "scope": "source.hxc", "file-types": ["hxc"], "highlights": ["queries/highlights.scm"] }
+  ]
+}
