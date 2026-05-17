@@ -158,6 +158,23 @@ hxc/
 
 `.hxc` is not yet a registered language on [github/linguist](https://github.com/github-linguist/linguist), so GitHub does not natively highlight `.hxc` fences. The repo ships a TextMate grammar that any modern editor can load — see [`syntaxes/README.md`](syntaxes/README.md) for VS Code / Sublime / TextMate install steps. Roadmap to upstream registration is in [`docs/DESIGN.md` §6](docs/DESIGN.md).
 
+### LSP (`lsp/hxc_lsp.py`)
+
+Zero-dependency stdio LSP server (Python 3.8+) — spec-grounded diagnostics:
+`# schema:<id> k1..kN` parsing, `@<id> v1|..|vN` field-count must equal the
+schema's key count, schema-used-before-declared, column-0 anchor invariant,
+BOM/CRLF — plus hover that expands a data row against its schema keys.
+
+```bash
+bin/hxc-lsp                # speak LSP on stdin/stdout (point your editor here)
+bin/hxc-lsp --check FILE   # one-shot lint (exit 1 on any error)
+```
+
+Verified against all `examples/*.hxc` (0 errors) and a broken fixture
+(arity mismatch + undeclared schema raised). A Claude Code plugin can wire
+it via `.lsp.json`:
+`{ "hxc": { "command": "hxc-lsp", "extensionToLanguage": {".hxc":"hxc"} } }`.
+
 ### Live preview
 
 Both themes rendered with [shiki](https://shiki.style/) from the shipped grammar — same content, different theme.
